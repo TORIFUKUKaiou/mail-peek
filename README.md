@@ -21,8 +21,7 @@ cd mail-peek
 # 依存関係をインストール
 uv sync
 
-# .envrc を有効化
-direnv allow
+# 下記を参考に .envrc を作成する
 ```
 
 ## 環境変数
@@ -34,7 +33,7 @@ direnv allow
 | `IMAP_HOST` | IMAP サーバーのホスト | `imap.example.com` |
 | `IMAP_PORT` | IMAP サーバーのポート | `993` |
 | `IMAP_USERNAME` | ログインユーザー名 | `user@example.com` |
-| `IMAP_PASSWORD` | ログインパスワード | `password` |
+| `IMAP_PASSWORD` | ログインパスワード（ドコモメールでは IMAP 専用パスワード） | `password` |
 
 `.envrc` の例:
 
@@ -44,6 +43,25 @@ export IMAP_PORT="993"
 export IMAP_USERNAME="user@example.com"
 export IMAP_PASSWORD="password"
 ```
+
+設定後に `.envrc` を有効化します。
+
+```bash
+direnv allow
+```
+
+### ドコモメールの場合
+
+パソコンから利用する場合は、以下を設定します。
+
+- `IMAP_HOST`: `imap.spmode.ne.jp`
+- `IMAP_PORT`: `993`
+- `IMAP_USERNAME`: dアカウント ID
+- `IMAP_PASSWORD`: IMAP 専用パスワード
+
+dアカウントの利用設定を有効にしたうえで、IMAP 専用パスワードを使用してください。詳細は[ドコモ公式の設定項目](https://www.docomo.ne.jp/service/docomo_mail/other/)を参照してください。
+
+ドコモの既知の IMAP ホストでは、接続互換性のため legacy TLS renegotiation を有効にします。この例外はドコモホストにのみ限定し、証明書検証と TLS 1.2 以上は維持します。
 
 ## コマンド例
 
@@ -61,9 +79,9 @@ mailpeek unread
 mailpeek read 1
 ```
 
-指定した ID（IMAP UID）のメールを表示します。表示が成功すると、自動的に既読フラグが付きます。
+`unread` に表示された正の十進数の ID（IMAP UID）を指定します。表示が成功すると、自動的に既読フラグが付きます。
 
 ## 注意事項
 
-- このツールは読み取り専用です。メールの送信や削除は行いません。
+- メールの送信や削除は行いません。ただし、`read` は対象メールに既読（`\Seen`）フラグを付けます。
 - 添付ファイルは検出・ファイル名表示のみ行い、保存はしません。

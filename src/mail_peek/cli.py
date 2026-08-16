@@ -30,6 +30,7 @@ def unread() -> None:
 def read(uid: str = typer.Argument(..., help="メールの ID（IMAP UID）")) -> None:
     """指定した ID のメールを表示し、既読にする。"""
     try:
+        uid = IMAPClient.validate_uid(uid)
         config = Config.from_env()
         with show_status("Connecting to IMAP server..."):
             with IMAPClient(config) as client:

@@ -117,6 +117,9 @@ def extract_body(message: EmailMessage) -> str:
         if part.is_multipart():
             continue
 
+        if part.get_content_disposition() == "attachment" or part.get_filename():
+            continue
+
         content_type = part.get_content_type()
         if content_type == "text/plain":
             return _decode_payload(part)
@@ -168,6 +171,7 @@ def extract_attachments(message: EmailMessage) -> tuple[bool, list[str]]:
     Returns:
         tuple[bool, list[str]]: 添付ファイルの有無とファイル名のリスト。
     """
+    has_attachments = False
     names: list[str] = []
 
     for part in message.walk():
@@ -178,10 +182,11 @@ def extract_attachments(message: EmailMessage) -> tuple[bool, list[str]]:
         filename = part.get_filename()
 
         if content_disposition == "attachment" or filename:
+            has_attachments = True
             if filename:
                 names.append(filename)
 
-    return bool(names), names
+    return has_attachments, names
 
 
 def build_email_detail(uid: str, message: EmailMessage) -> EmailDetail:

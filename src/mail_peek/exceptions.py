@@ -35,3 +35,9 @@ class NotFoundError(MailPeekError):
     """指定した ID のメールが存在しない場合の例外。"""
 
     pass
+
+
+class InvalidUidError(MailPeekError):
+    """指定された IMAP UID が単一メールを指さない場合の例外。"""
+
+    pass

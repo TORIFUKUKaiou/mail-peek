@@ -9,9 +9,20 @@ from email.message import EmailMessage
 from typing import cast
 
 from mail_peek.config import Config
-from mail_peek.exceptions import AuthenticationError, ConnectionError, FetchError, NotFoundError
+from mail_peek.exceptions import (
+    AuthenticationError,
+    ConnectionError,
+    FetchError,
+    InvalidUidError,
+    NotFoundError,
+)
 from mail_peek.extractor import build_email_detail, decode_header_value
 from mail_peek.models import EmailDetail, EmailSummary
+
+
+_DOCOMO_LEGACY_RENEGOTIATION_HOSTS = frozenset(
+    {"imap.spmode.ne.jp", "imap2.spmode.ne.jp"}
+)
 
 
 class IMAPClient:
@@ -40,9 +51,12 @@ class IMAPClient:
             AuthenticationError: 認証に失敗した場合。
         """
         try:
-            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-            ssl_context.options |= ssl.OP_LEGACY_SERVER_CONNECT
-            ssl_context.load_default_certs()
+            ssl_context = ssl.create_default_context()
+            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+            if self._config.host.rstrip(".").lower() in _DOCOMO_LEGACY_RENEGOTIATION_HOSTS:
+                # ドコモの IMAP サーバーが legacy renegotiation を要求するため。
+                # 既知のドコモホストに限定し、証明書検証と TLS 1.2 以上は維持する。
+                ssl_context.options |= ssl.OP_LEGACY_SERVER_CONNECT
             self._client = imaplib.IMAP4_SSL(
                 host=self._config.host,
                 port=self._config.port,
@@ -130,9 +144,11 @@ class IMAPClient:
             EmailDetail: メール詳細データ。
 
         Raises:
+            InvalidUidError: UID が単一の正の十進数でない場合。
             NotFoundError: メールが存在しない場合。
             FetchError: 取得に失敗した場合。
         """
+        uid = self.validate_uid(uid)
         client = self._require_client()
 
         try:
@@ -155,8 +171,10 @@ class IMAPClient:
             uid: メールの UID。
 
         Raises:
+            InvalidUidError: UID が単一の正の十進数でない場合。
             FetchError: フラグの更新に失敗した場合。
         """
+        uid = self.validate_uid(uid)
         client = self._require_client()
 
         try:
@@ -165,6 +183,34 @@ class IMAPClient:
                 raise FetchError(f"Failed to mark email {uid} as seen.")
         except imaplib.IMAP4.error as exc:
             raise FetchError(f"Failed to mark email {uid} as seen.") from exc
+
+    @staticmethod
+    def validate_uid(uid: str) -> str:
+        """単一メールを指す IMAP UID か検証する。
+
+        IMAP の UID コマンドは ``1:*`` のような集合指定も受け付ける。
+        この CLI では単一メールのみを対象とするため、RFC で定義される
+        32 ビットの正の十進数 UID に限定する。
+
+        Args:
+            uid: 検証対象の UID。
+
+        Returns:
+            検証済みの UID。
+
+        Raises:
+            InvalidUidError: UID が単一の正の十進数でない場合。
+        """
+        if (
+            not isinstance(uid, str)
+            or not uid.isascii()
+            or not uid.isdecimal()
+            or uid.startswith("0")
+            or len(uid) > 10
+            or int(uid) > 0xFFFFFFFF
+        ):
+            raise InvalidUidError("Email ID must be a positive decimal IMAP UID.")
+        return uid
 
     def _require_client(self) -> imaplib.IMAP4_SSL:
         """クライアントが接続済みか確認して返す。
