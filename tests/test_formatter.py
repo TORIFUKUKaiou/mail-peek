@@ -54,6 +54,16 @@ class FormatterTests(unittest.TestCase):
         self.assertIn(r"\x1b", rendered)
         self.assertNotIn("\x1b", rendered)
 
+    def test_normalizes_normal_crlf_line_endings(self) -> None:
+        self.assertEqual(
+            formatter._sanitize_terminal_text("first\r\nsecond\r\n"),
+            "first\nsecond\n",
+        )
+        self.assertEqual(
+            formatter._sanitize_terminal_text("first\rsecond"),
+            r"first\x0dsecond",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

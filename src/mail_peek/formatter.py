@@ -18,7 +18,8 @@ console = Console()
 
 
 def _sanitize_terminal_text(value: str) -> str:
-    """端末制御文字を可視化して、メール由来の文字列を安全にする。"""
+    """通常の改行を保ちつつ、端末制御文字を可視化する。"""
+    value = value.replace("\r\n", "\n")
     sanitized: list[str] = []
     for char in value:
         codepoint = ord(char)
