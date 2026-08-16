@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mail-peek = "mail_peek:main"
+mailpeek = "mail_peek:main"
 
 [tool.uv]
 exclude-newer = "7 days"
