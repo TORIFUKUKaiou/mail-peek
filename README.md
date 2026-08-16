@@ -68,7 +68,7 @@ dアカウントの利用設定を有効にしたうえで、IMAP 専用パス�
 ### 未読メール一覧
 
 ```bash
-mailpeek unread
+uv run mailpeek unread
 ```
 
 未読メールを新しい順で最大 10 件表示します。
@@ -76,7 +76,7 @@ mailpeek unread
 ### メール詳細表示
 
 ```bash
-mailpeek read 1
+uv run mailpeek read 1
 ```
 
 `unread` に表示された正の十進数の ID（IMAP UID）を指定します。表示が成功すると、自動的に既読フラグが付きます。
